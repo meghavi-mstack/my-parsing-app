@@ -18,6 +18,14 @@ load_dotenv()
 
 # ----- Parsing Functions -----
 
+@st.cache_data(show_spinner=True)
+def cached_docling_conversion(tmp_path: str):
+    # Disable HTTPS strict checking
+    ssl._create_default_https_context = ssl._create_unverified_context
+    converter = DocumentConverter()
+    result = converter.convert(tmp_path)
+    return result.document.export_to_markdown()
+
 def parse_with_pytesseract(pdf_stream):
     """Parse PDF using pytesseract OCR."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
@@ -31,15 +39,13 @@ def parse_with_pytesseract(pdf_stream):
     return ocr_output
 
 def parse_with_docling(pdf_stream):
-    """Parse PDF using docling.document_converter."""
+    """Parse PDF using docling.document_converter with caching."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         tmp.write(pdf_stream.read())
         tmp_path = tmp.name
-    ssl._create_default_https_context = ssl._create_unverified_context
-    converter = DocumentConverter()
-    result = converter.convert(tmp_path)
-    docling_md = result.document.export_to_markdown()
-    return docling_md
+    # Use the cached conversion so heavy model downloads only occur once.
+    return cached_docling_conversion(tmp_path)
+
 
 def parse_with_pymupdf(pdf_stream):
     """Parse PDF using pymupdf4llm."""
@@ -57,7 +63,13 @@ def parse_with_mistral(pdf_stream):
         tmp_path = tmp.name
 
     # Get the API key from environment variables.
-    api_key = st.secrets.get("MISTRAL_API_KEY") or os.environ.get("MISTRAL_API_KEY")
+    try:
+        api_key = st.secrets.get("MISTRAL_API_KEY")
+    except FileNotFoundError:
+        api_key = None
+
+    if not api_key:
+        api_key = os.environ.get("MISTRAL_API_KEY")
     if not api_key:
         return "Mistral API key is not set in environment variables."
 
