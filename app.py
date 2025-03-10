@@ -5,6 +5,13 @@ import ssl
 import os
 from io import BytesIO
 
+_original_os_remove = os.remove
+def safe_remove(path):
+    try:
+        _original_os_remove(path)
+    except FileNotFoundError:
+        pass
+os.remove = safe_remove
 # Required libraries for parsing
 import pytesseract
 from pdf2image import convert_from_path
