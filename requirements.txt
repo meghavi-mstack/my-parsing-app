@@ -1,0 +1,7 @@
+streamlit
+pytesseract
+pdf2image
+docling
+pymupdf4llm
+mistralai
+python-dotenv
