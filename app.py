@@ -57,7 +57,7 @@ def parse_with_mistral(pdf_stream):
         tmp_path = tmp.name
 
     # Get the API key from environment variables.
-    api_key = os.environ.get("MISTRAL_API_KEY")
+    api_key = st.secrets.get("MISTRAL_API_KEY") or os.environ.get("MISTRAL_API_KEY")
     if not api_key:
         return "Mistral API key is not set in environment variables."
 
